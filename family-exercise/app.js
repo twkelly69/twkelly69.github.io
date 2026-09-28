@@ -11,10 +11,12 @@
   let selected = state.members[0]?.id || '';
   const groupName = id => groups.find(g => g.id === id)?.label || '';
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); return true; } catch { alert('儲存空間不足或瀏覽器封鎖儲存。請先匯出備份。'); return false; } };
-  const guide = (ex, group) => {
+  const guide = (ex, group, visibleVideo = false) => {
     const q = ['senior','elder'].includes(group) ? ex.guide.olderSearch || ex.guide.search : ex.guide.search;
     const url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
-    return '<details class="guide"><summary>怎麼做 <span>⌄</span></summary><ol>' + ex.guide.instructions.map(step => '<li>' + escape(step) + '</li>').join('') + '</ol><p><b>小提醒</b> ' + escape(ex.caution) + '</p><a target="_blank" rel="noopener noreferrer" href="' + url + '">在 YouTube 看動作示範 ↗</a><small>會開啟搜尋結果；先確認影片中的動作版本適合自己。</small></details>';
+    const link = '<a class="' + (visibleVideo ? 'video-cta' : '') + '" target="_blank" rel="noopener noreferrer" href="' + url + '">在 YouTube 看動作示範 ↗</a>';
+    const note = '<small>會開啟搜尋結果；先確認影片中的動作版本適合自己。</small>';
+    return '<details class="guide"><summary>怎麼做 <span>⌄</span></summary><ol>' + ex.guide.instructions.map(step => '<li>' + escape(step) + '</li>').join('') + '</ol><p><b>小提醒</b> ' + escape(ex.caution) + '</p>' + (visibleVideo ? '' : link + note) + '</details>' + (visibleVideo ? link + '<p class="video-note">' + note + '</p>' : '');
   };
   function render() {
     $('#today').textContent = today;
@@ -26,7 +28,7 @@
     else if (!d) $('#draw').innerHTML = '<div class="draw"><p class="eyebrow">' + escape(m.name) + ' · ' + groupName(m.group) + '</p><h3>今天的籤，等你來抽</h3><p>從適合這個年齡組的動作中抽選。抽到後今天固定，明天避開同一動作。</p><button class="primary" data-action="draw">抽今天的運動 →</button></div>';
     else if (d.status === 'rest') $('#draw').innerHTML = '<div class="draw"><h3>今天好好休息</h3><p>休息也是照顧身體的一部分。明天再來抽一支。</p></div>';
     else if (!ex) $('#draw').innerHTML = '<div class="draw"><h3>找不到這支運動籤</h3><p>請從備份還原或重新整理頁面。</p></div>';
-    else $('#draw').innerHTML = '<div class="draw"><p class="eyebrow">' + escape(m.name) + ' · ' + groupName(m.group) + ' · ' + escape(ex.category) + '</p><h3>' + escape(ex.title) + '</h3><p>' + escape(ex.steps) + '</p>' + guide(ex, m.group) + '<div class="rounds">' + ex.rounds.map((r, i) => '<button class="round ' + (d.rounds > i ? 'complete' : '') + '" data-round="' + (i+1) + '" ' + (d.status === 'done' ? 'disabled' : '') + '><span class="number">' + (d.rounds > i ? '✓' : i+1) + '</span><span><b>第 ' + (i+1) + ' 段</b><small>' + escape(r) + '</small></span></button>').join('') + '</div><p class="hint">每做完一段就點一下；三段可分開做。</p><div class="foot"><b>' + (d.status === 'done' ? '今天完成了，做得好！' : '已完成 ' + d.rounds + ' / 3 段') + '</b>' + (d.rounds === 0 ? '<button class="link" data-action="rest">今天需要休息</button>' : '') + '</div></div>';
+    else $('#draw').innerHTML = '<div class="draw"><p class="eyebrow">' + escape(m.name) + ' · ' + groupName(m.group) + ' · ' + escape(ex.category) + '</p><h3>' + escape(ex.title) + '</h3><p>' + escape(ex.steps) + '</p>' + guide(ex, m.group, true) + '<div class="rounds">' + ex.rounds.map((r, i) => '<button class="round ' + (d.rounds > i ? 'complete' : '') + '" data-round="' + (i+1) + '" ' + (d.status === 'done' ? 'disabled' : '') + '><span class="number">' + (d.rounds > i ? '✓' : i+1) + '</span><span><b>第 ' + (i+1) + ' 段</b><small>' + escape(r) + '</small></span></button>').join('') + '</div><p class="hint">每做完一段就點一下；三段可分開做。</p><div class="foot"><b>' + (d.status === 'done' ? '今天完成了，做得好！' : '已完成 ' + d.rounds + ' / 3 段') + '</b>' + (d.rounds === 0 ? '<button class="link" data-action="rest">今天需要休息</button>' : '') + '</div></div>';
     $('#board').innerHTML = state.members.length ? state.members.map(person => {
       const record = state.draws.find(item => item.memberId === person.id && item.day === today);
       const count = state.draws.filter(item => item.memberId === person.id && item.status === 'done' && item.day >= day(new Date(Date.now()-35*86400000))).length;
